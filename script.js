@@ -20,6 +20,10 @@ $(document).ready(function(){
         updateColors();
     });
 
+    $('#func-survival, #func-birth').change(function(){
+        updateFunctions();
+    });
+    updateFunctions();
 });
 
 var width = 100;
@@ -47,8 +51,8 @@ function create(){
     field = makeArray(width * height);
 
     var coords = function(event){
-        var px = event.clientX - canvas.offsetLeft,
-            py = event.clientY - canvas.offsetTop;
+        var px = event.layerX - canvas.offsetLeft,
+            py = event.layerY - canvas.offsetTop;
 
         var x = Math.floor(px / tileSize);
         var y = Math.floor(py / tileSize);
@@ -131,13 +135,43 @@ function neighbours(x, y){
     return count;
 }
 
+function updateFunc(elem){
+    var errorElem = elem.parent().find(".error-message");
+
+    try {
+        var res = eval('var v = function(x, y) { ' + elem.val() + ' }; v');
+
+        elem.removeClass("badcode");
+        errorElem.hide();
+
+        return res;
+    } catch(e){
+        elem.addClass("badcode");
+        errorElem.text("line "+e.lineNumber +": " + e.message);
+        errorElem.show();
+        console.log(e);
+        return null;
+    }
+}
+
+function updateFunctions(){
+    survivalFunc = updateFunc($('#func-survival'));
+    birthFunc = updateFunc($('#func-birth'));
+}
+
+var survivalFunc;
 function survival(x, y){
+    if(survivalFunc!=null) return survivalFunc(x, y);
+
     var n = neighbours(x, y);
 
     return n==2 || n==3;
 }
 
+var birthFunc;
 function birth(x, y){
+    if(birthFunc!=null) return birthFunc(x, y);
+
     var n = neighbours(x, y);
 
     return n==3;
@@ -257,5 +291,6 @@ function autoStep(){
     step();
     paint();
 
-    window.setTimeout(autoStep, 100);
+    var period = $('#auto-period').val() || 100;
+    window.setTimeout(autoStep, period);
 }

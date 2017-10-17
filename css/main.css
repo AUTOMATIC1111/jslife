@@ -11,3 +11,15 @@
 #controls textarea{
     font-family: Consolas, Courier, monospace;
 }
+
+.badcode{
+    background: #fff3ec;
+    border: 1px solid #777;
+}
+
+.error-message{
+    padding: 0.5em;
+    margin: 0.5em;
+    border: 2px solid red;
+    display: inline-block;
+}
