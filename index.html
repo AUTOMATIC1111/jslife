@@ -16,8 +16,9 @@
     <body>
     <div id="canvas"></div>
     <div id="controls">
+        <label>Width: <input id="width" value="100"></label> <label>Height: <input id="height" value="100"></label><br>
         <input type="button" value="Step" id="button-step">
-        <label><input type="checkbox" id="button-auto"> Auto, with period, ms: </label> <input id="auto-period" value="100">
+        <label><input type="checkbox" id="button-auto"> Auto, with period, ms: </label> <input id="auto-period" value="100"> <span id="timing-step"></span> | <span id="timing-render"></span>
         <br>
         <label><input type="checkbox" id="button-interpolation"> scaling interpolation</label>
         <br>
@@ -26,7 +27,21 @@
         <label>Growth age: <input id="age-growth" value="5"></label><br>
         <label>Death color: <input class="jscolor" id="color-death" value="CEE4DC"></label><br>
         <label>Decay color: <input class="jscolor" id="color-decay" value="FFFFFF"></label><br>
-        <label>Growth age: <input id="age-decay" value="25"></label><br>
+        <label>Decay age: <input id="age-decay" value="25"></label><br>
+
+        <div class="info">
+
+                Survival/Birth conditions are javascript code.<br>
+                <tt>x</tt> and <tt>y</tt> are coordinates of the current cell.<br>
+                <tt>n</tt>is the number of neighbours, from 0 to 8.<br>
+                You can use following functions:<br>
+                <ul>
+                    <li><tt>get(x, y)</tt> - returns the age of a cell at (x, y) - if it's negative, the cell is dead</li>
+                </ul>
+
+                Return true if the cell should survive/appear or false if nothing should change.
+
+        </div>
 
         <div>
             <label>Survival condition:</label><br>

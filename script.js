@@ -24,10 +24,17 @@ $(document).ready(function(){
         updateFunctions();
     });
     updateFunctions();
+
+    $('#width, #height').change(function(){
+        create();
+    });
+
 });
 
 var width = 100;
 var height = 100;
+var maxx;
+var maxy;
 var tileSize = 5;
 
 var field;
@@ -41,6 +48,12 @@ function makeArray(size){
 
 function create(){
     $('#canvas').empty();
+
+    width = $('#width').val()|0 || 100;
+    height = $('#height').val()|0 || 100;
+
+    maxx = width-1;
+    maxy = width-1;
 
     canvas = document.createElement('canvas');
     canvas.id = "CursorLayer";
@@ -108,6 +121,8 @@ function create(){
 }
 
 function get(x,y){
+    if(x>0 && x<maxx && y>0 && y<maxy) return field[x + y * width];
+
     if(x < 0) x+=width;
     if(y < 0) y+=height;
     if(x >= width) x-=width;
@@ -135,11 +150,25 @@ function neighbours(x, y){
     return count;
 }
 
+function neighboursUnchecked(x, y){
+    var count = 0;
+
+    count += field[(x-1) + (y-1) * width]>0 ? 1 : 0;
+    count += field[(x-1) + (y+0) * width]>0 ? 1 : 0;
+    count += field[(x-1) + (y+1) * width]>0 ? 1 : 0;
+    count += field[(x+0) + (y-1) * width]>0 ? 1 : 0;
+    count += field[(x+0) + (y+1) * width]>0 ? 1 : 0;
+    count += field[(x+1) + (y-1) * width]>0 ? 1 : 0;
+    count += field[(x+1) + (y+0) * width]>0 ? 1 : 0;
+    count += field[(x+1) + (y+1) * width]>0 ? 1 : 0;
+
+    return count;
+}
 function updateFunc(elem){
     var errorElem = elem.parent().find(".error-message");
 
     try {
-        var res = eval('var v = function(x, y) { ' + elem.val() + ' }; v');
+        var res = eval('var v = function(x, y, n) { ' + elem.val() + ' }; v');
 
         elem.removeClass("badcode");
         errorElem.hide();
@@ -160,39 +189,41 @@ function updateFunctions(){
 }
 
 var survivalFunc;
-function survival(x, y){
-    if(survivalFunc!=null) return survivalFunc(x, y);
-
-    var n = neighbours(x, y);
-
+function survival(x, y, n){
+    if(survivalFunc!=null) return survivalFunc(x, y, n);
     return n==2 || n==3;
 }
 
 var birthFunc;
-function birth(x, y){
-    if(birthFunc!=null) return birthFunc(x, y);
-
-    var n = neighbours(x, y);
+function birth(x, y, n){
+    if(birthFunc!=null) return birthFunc(x, y, n);
 
     return n==3;
 }
 
 function step(){
-    var newField = makeArray(field.length);
+    var t0 = performance.now();
 
+    var newField = makeArray(field.length);
     for(var x=0;x<width;x++){
         for(var y=0;y<height;y++){
             var coord = x + y * width;
+            var n = (x==0 || y==0 || x+1==width || y+1==height) ? neighbours(x, y) : neighboursUnchecked(x, y);
 
             if(field[coord]>0){
-                newField[coord] = survival(x, y) ? field[coord] + 1 : 0;
+                newField[coord] = survival(x, y, n) ? field[coord] + 1 : 0;
             } else{
-                newField[coord] = birth(x, y) ? 1 : field[coord] - 1;
+                newField[coord] = birth(x, y, n) ? 1 : field[coord] - 1;
             }
         }
     }
 
     field = newField;
+
+    var t1 = performance.now();
+
+    $('#timing-step').text("step: "+Math.floor(t1-t0)+"ms");
+
 }
 
 function blend(a, b, p){
@@ -252,6 +283,8 @@ function colorValue(age){
 }
 
 function paint(){
+    var t0 = performance.now();
+
     var ctx = canvas.getContext("2d");
 
     var tempCanvas=document.createElement("canvas");
@@ -283,6 +316,9 @@ function paint(){
     ctx.drawImage(tempCanvas,0,0);
     ctx.restore();
 
+    var t1 = performance.now();
+
+    $('#timing-render').text("render: "+Math.floor(t1-t0)+"ms");
 }
 
 function autoStep(){

@@ -23,3 +23,11 @@
     border: 2px solid red;
     display: inline-block;
 }
+
+.info{
+    border: 2px dashed black;
+    background: #fbffdf;
+    padding: 0.5em;
+    margin: 0.5em;
+    display: inline-block;
+}
