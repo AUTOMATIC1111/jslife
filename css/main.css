@@ -1,0 +1,13 @@
+
+#canvas canvas{
+    box-shadow: 0 0 4px black;
+    margin: 1em;
+}
+
+#controls{
+    margin: 1em;
+}
+
+#controls textarea{
+    font-family: Consolas, Courier, monospace;
+}

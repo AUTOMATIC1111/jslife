@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Game of life</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="jquery-1.12.0.min.js"></script>
+        <script src="jquery.color.plus-names-2.1.2.min.js"></script>
+        <script src="script.js"></script>
+        <script src="jscolor.js"></script>
+    </head>
+    <body>
+    <div id="canvas"></div>
+    <div id="controls">
+        <input type="button" value="Step" id="button-step">
+        <label><input type="checkbox" id="button-auto"> Auto</label>
+        <br>
+        <label><input type="checkbox" id="button-interpolation"> scaling interpolation</label>
+        <br>
+        <label>Birth color: <input class="jscolor" id="color-birth" value="2C6C0D"></label><br>
+        <label>Growth color: <input class="jscolor" id="color-growth" value="0BC800"></label><br>
+        <label>Growth age: <input id="age-growth" value="5"></label><br>
+        <label>Death color: <input class="jscolor" id="color-death" value="CEE4DC"></label><br>
+        <label>Decay color: <input class="jscolor" id="color-decay" value="FFFFFF"></label><br>
+        <label>Growth age: <input id="age-decay" value="25"></label><br>
+
+        <label>Survival condition:</label><br>
+        <textarea rows='6' cols="120">var n = neighbours(x, y);
+return n==2 || n==3;</textarea><br>
+
+        <label>Birth condition:</label><br>
+        <textarea rows='6' cols="120">var n = neighbours(x, y);
+return n==3;</textarea><br>
+
+
+    </div>
+    </body>
+</html>
