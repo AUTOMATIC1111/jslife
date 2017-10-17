@@ -16,18 +16,47 @@ $(document).ready(function(){
     });
     autoStep();
 
-    $('#color-birth, #color-death, #color-growth, #color-decay, #age-growth, #age-decay').change(function(){
-        updateColors();
-    });
-
-    $('#func-survival, #func-birth').change(function(){
+    $('#func-color, #func-generation, #func-global').change(function(){
         updateFunctions();
+        updateColors();
     });
     updateFunctions();
 
     $('#width, #height').change(function(){
         create();
     });
+
+    $('#button-clear').click(function(){
+        create();
+    });
+
+    $('#button-random').click(function(){
+        randomize();
+    });
+
+    $('#button-export').click(function(){
+        var js = save();
+
+        $('#permalink').attr('href', location.protocol+'//'+location.host+location.pathname+(location.search?location.search:"") + '#' +js);
+        $('#permalink').show();
+
+        prompt("Export code", js);
+    });
+
+    $('#button-import').click(function(){
+        var res = prompt("Paste code here", "");
+        if(! res) return;
+
+        load(res);
+        create();
+    });
+
+    if(location.hash){
+        var js = location.hash.substr(1);
+
+        load(js);
+        create();
+    }
 
 });
 
@@ -41,6 +70,53 @@ var field;
 var auto = false;
 
 var canvas;
+
+var exportFields=[
+    'width',
+    'height',
+    'randomize-age-a',
+    'randomize-age-b',
+    'auto-period',
+    'age-paint',
+    'age-erase',
+    'func-generation',
+    'func-color',
+    'func-global',
+];
+
+function save(){
+    var obj = {};
+
+    exportFields.forEach(function(a){
+        obj[a] = $('#'+a).val();
+    });
+
+    return encodeURIComponent(JSON.stringify(obj));
+}
+
+function load(js){
+    var obj = JSON.parse(decodeURIComponent(js));
+
+    console.log(obj);
+
+    exportFields.forEach(function(a){
+        if(obj[a] !== undefined){
+            $('#'+a).val(obj[a]);
+        }
+    });
+
+    return obj;
+}
+
+
+
+function paintAge(){
+    return $('#age-paint').val()|0;
+}
+
+function eraseAge(){
+    return $('#age-erase').val()|0;
+}
 
 function makeArray(size){
     return Array.apply(0, Array(size)).map(function () { return -1000 });
@@ -81,30 +157,59 @@ function create(){
     var painting;
     var erasing;
     var clicked = function(coord){
-        if(painting) field[coord] = 1;
-        if(erasing) field[coord] = -1000;
+        if(painting) field[coord] = paintAge();
+        if(erasing) field[coord] = eraseAge();
 
-        paint();
     };
 
     canvas.addEventListener('mousedown', function(event) {
         var coord = coords(event);
         if(coord == -1) return;
 
-        var isPopulated = field[coord]>0;
-        painting = ! isPopulated;
-        erasing = isPopulated;
+        var shouldPaint = field[coord] == paintAge() ? 0 : 1;
+        painting = shouldPaint;
+        erasing = ! shouldPaint;
 
         clicked(coord);
+        paint();
     }, false);
 
+    var drawLine = function (x0, y0, x1, y1) {
+
+        var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        var err = (dx>dy ? dx : -dy)/2;
+
+        while (true) {
+            clicked(x0 + y0 * width);
+            if (x0 === x1 && y0 === y1) break;
+            var e2 = err;
+            if (e2 > -dx) { err -= dy; x0 += sx; }
+            if (e2 < dy) { err += dx; y0 += sy; }
+        }
+    }
+
+    var prevX=-1, prevY=-1;
     canvas.addEventListener('mousemove', function(event) {
         if(! painting && !erasing) return;
 
         var coord = coords(event);
         if(coord == -1) return;
 
-        clicked(coord);
+        var x = coord % width;
+        var y = Math.floor(coord / width)
+
+        if(prevX!=-1){
+            drawLine(prevX, prevY, x, y);
+        } else{
+            clicked(coord);
+        }
+
+        paint();
+
+        prevX = x;
+        prevY = y;
+
     }, false);
 
     canvas.addEventListener('mouseup', function(event) {
@@ -114,8 +219,12 @@ function create(){
         painting = 0;
         erasing = 0;
 
-        clicked(coord);
+        prevX = -1;
+        prevY = -1;
     }, false);
+
+    updateFunctions();
+    updateColors();
 
     paint();
 }
@@ -164,11 +273,11 @@ function neighboursUnchecked(x, y){
 
     return count;
 }
-function updateFunc(elem){
+function updateFunc(elem, args){
     var errorElem = elem.parent().find(".error-message");
 
     try {
-        var res = eval('var v = function(x, y, n) { ' + elem.val() + ' }; v');
+        var res = eval('var v = function('+args+') { ' + elem.val() + ' }; v');
 
         elem.removeClass("badcode");
         errorElem.hide();
@@ -184,22 +293,25 @@ function updateFunc(elem){
 }
 
 function updateFunctions(){
-    survivalFunc = updateFunc($('#func-survival'));
-    birthFunc = updateFunc($('#func-birth'));
+    generationFunc = updateFunc($('#func-generation'), "x, y, n, age");
+    colorFunc = updateFunc($('#func-color'), "age");
+    globalFunc = updateFunc($('#func-global'), "");
+
+    globalFunc();
 }
 
-var survivalFunc;
-function survival(x, y, n){
-    if(survivalFunc!=null) return survivalFunc(x, y, n);
-    return n==2 || n==3;
+var generationFunc;
+function generation(x, y, n, age){
+    if(generationFunc!=null) return generationFunc(x, y, n, age);
+    return 0;
 }
 
-var birthFunc;
-function birth(x, y, n){
-    if(birthFunc!=null) return birthFunc(x, y, n);
-
-    return n==3;
+var colorFunc;
+function color(age){
+    if(colorFunc!=null) return colorFunc(age);
+    return jQuery.Color("white");
 }
+
 
 function step(){
     var t0 = performance.now();
@@ -209,12 +321,9 @@ function step(){
         for(var y=0;y<height;y++){
             var coord = x + y * width;
             var n = (x==0 || y==0 || x+1==width || y+1==height) ? neighbours(x, y) : neighboursUnchecked(x, y);
+            var age = field[coord];
 
-            if(field[coord]>0){
-                newField[coord] = survival(x, y, n) ? field[coord] + 1 : 0;
-            } else{
-                newField[coord] = birth(x, y, n) ? 1 : field[coord] - 1;
-            }
+            newField[coord] = generation(x, y, n, field[coord]);
         }
     }
 
@@ -223,7 +332,23 @@ function step(){
     var t1 = performance.now();
 
     $('#timing-step').text("step: "+Math.floor(t1-t0)+"ms");
+}
 
+
+function randomize(){
+    var a = $('#randomize-age-a').val()|0;
+    var b = $('#randomize-age-b').val()|0;
+
+    for(var x=0;x<width;x++){
+        for(var y=0;y<height;y++){
+            var coord = x + y * width;
+
+            field[coord] = Math.floor(a + (b-a+1) * Math.random());
+        }
+    }
+
+
+    paint();
 }
 
 function blend(a, b, p){
@@ -237,39 +362,9 @@ function blend(a, b, p){
     return jQuery.Color( cr, cg, cb, 1.0 );
 }
 
-var colorCache;
 var colorValuesCache;
-var colorBirth;
-var colorGrowth;
-var colorDeath;
-var colorDecay;
-var decayAge;
-var growthAge;
-
 function updateColors(){
-    colorCache = {};
     colorValuesCache = {};
-
-    colorBirth = jQuery.Color( '#'+$('#color-birth').val() );
-    colorGrowth = jQuery.Color( '#'+$('#color-growth').val() );
-    colorDeath = jQuery.Color( '#'+$('#color-death').val() );
-    colorDecay = jQuery.Color( '#'+$('#color-decay').val() );
-    decayAge = parseInt($('#age-decay').val()) || 1;
-    growthAge = parseInt($('#age-growth').val()) || 1;
-}
-
-function color(age){
-    var cached = colorCache[age];
-    if(cached !== undefined) return cached;
-
-    if(age > 0){
-        cached = blend(colorGrowth, colorBirth, (age-1)*1.0/growthAge);
-    } else{
-        cached = blend(colorDecay, colorDeath, -age*1.0/decayAge);
-    }
-
-    colorCache[age] = cached;
-    return cached;
 }
 
 function colorValue(age){
